@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'ui_theme.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -9,9 +11,21 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final TextEditingController _name = TextEditingController(text: 'AI Assistant');
-  final TextEditingController _email = TextEditingController(text: 'aiassistantapp@gmail.com');
-  final TextEditingController _phone = TextEditingController(text: '+91 76765 87609');
+  final TextEditingController _name = TextEditingController();
+  final TextEditingController _email = TextEditingController();
+  final TextEditingController _phone = TextEditingController();
+  
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  bool _isLoading = true;
+  bool _isSaving = false;
+  String? _userId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
 
   @override
   void dispose() {
@@ -19,6 +33,25 @@ class _ProfilePageState extends State<ProfilePage> {
     _email.dispose();
     _phone.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    _userId = user.uid;
+    _email.text = user.email ?? '';
+    _name.text = user.displayName ?? '';
+
+    final prefs = await SharedPreferences.getInstance();
+    _phone.text = prefs.getString('phone_${user.uid}') ?? '';
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -43,16 +76,32 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
                 child: Row(
-                  children: const [
-                    CircleAvatar(radius: 28, backgroundColor: Color(0xFFE6F4EA), child: Icon(Icons.person, color: Colors.black87)),
-                    SizedBox(width: 12),
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: const Color(0xFFE6F4EA),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.person, color: Colors.black87),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Ai Assistant app', style: TextStyle(fontWeight: FontWeight.w800)),
-                          SizedBox(height: 2),
-                          Text('Update your personal info', style: TextStyle(color: AppColors.textMuted)),
+                          Text(
+                            _isLoading ? 'Loading...' : (_name.text.isEmpty ? 'User' : _name.text),
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _isLoading ? 'Please wait' : 'Update your personal info',
+                            style: const TextStyle(color: AppColors.textMuted),
+                          ),
                         ],
                       ),
                     ),
@@ -73,7 +122,12 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 12),
                     _field(label: 'Full Name', controller: _name),
                     const SizedBox(height: 12),
-                    _field(label: 'Email', controller: _email, keyboardType: TextInputType.emailAddress),
+                    _field(
+                      label: 'Email',
+                      controller: _email,
+                      keyboardType: TextInputType.emailAddress,
+                      enabled: false, // Email cannot be changed
+                    ),
                     const SizedBox(height: 12),
                     _field(label: 'Phone', controller: _phone, keyboardType: TextInputType.phone),
                   ],
@@ -92,16 +146,23 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: SizedBox(
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved')));
-                          },
+                          onPressed: _isSaving || _isLoading ? null : _saveProfile,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF16A34A),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
                             elevation: 0,
                           ),
-                          child: const Text('Save', style: TextStyle(fontWeight: FontWeight.w700)),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Text('Save', style: TextStyle(fontWeight: FontWeight.w700)),
                         ),
                       ),
                     ),
@@ -110,7 +171,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: SizedBox(
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () => Navigator.of(context).maybePop(),
+                          onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFA7D9B8),
                             foregroundColor: Colors.black87,
@@ -131,7 +192,66 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _field({required String label, required TextEditingController controller, TextInputType? keyboardType}) {
+  Future<void> _saveProfile() async {
+    if (_userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User not logged in'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_name.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your name'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await user.updateDisplayName(_name.text.trim());
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('phone_${user.uid}', _phone.text.trim());
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving profile: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  Widget _field({
+    required String label,
+    required TextEditingController controller,
+    TextInputType? keyboardType,
+    bool enabled = true,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -140,6 +260,7 @@ class _ProfilePageState extends State<ProfilePage> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          enabled: enabled,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
@@ -176,5 +297,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 }
+
+
 
 

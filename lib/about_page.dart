@@ -16,27 +16,35 @@ class AboutPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Center(child: Text('About Us', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800))),
+              const Center(
+                  child: Text('About Us',
+                      style:
+                          TextStyle(fontSize: 28, fontWeight: FontWeight.w800))),
               const SizedBox(height: 8),
               const Divider(height: 1, color: Color(0xFFBFD7C7)),
               const SizedBox(height: 16),
 
+              // About Us Card
               _card(
                 child: const Text(
                   'AI Assistant is your smart companion that helps with daily tasks like chatting, generating stories, images, reminders, and much more. Our mission is to make AI simple and useful for everyone.',
-                  style: TextStyle(color: AppColors.textMuted, height: 1.4, fontSize: 16),
+                  style:
+                      TextStyle(color: AppColors.textMuted, height: 1.4, fontSize: 16),
                 ),
               ),
 
               const SizedBox(height: 16),
 
+              // Developed By Card
               _card(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Developed By', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                    const Text('Developed By',
+                        style:
+                            TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                     const SizedBox(height: 12),
-                    _infoField(label: 'Company', value: 'ai assistant'),
+                    _infoField(label: 'Company', value: 'AI Assistant'),
                     const SizedBox(height: 12),
                     _infoField(label: 'Email', value: 'aiassistantapp@gmail.com'),
                   ],
@@ -45,13 +53,18 @@ class AboutPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
+              
               _card(
+                minHeight: 120,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
-                    Text('App version', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                    SizedBox(height: 8),
-                    Text('Version 1.0.0'),
+                    Text('App Version',
+                        style:
+                            TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                    SizedBox(height: 12),
+                    Text('Version 1.0.0',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -62,10 +75,23 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  Widget _card({required Widget child}) {
+  // Uniform Card Widget with optional minHeight
+  Widget _card({required Widget child, double minHeight = 150}) {
     return Container(
+      width: double.infinity,
+      constraints: BoxConstraints(minHeight: minHeight),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2)),
+        ],
+      ),
       child: child,
     );
   }
@@ -81,7 +107,7 @@ class AboutPage extends StatelessWidget {
           alignment: Alignment.centerLeft,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFFF7FBF8),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: const Color(0xFFE5E7EB)),
           ),
@@ -96,7 +122,8 @@ class AboutPage extends StatelessWidget {
       height: 78,
       decoration: const BoxDecoration(
         color: Color(0xFFE9F0EB),
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+        borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(12), topRight: Radius.circular(12)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -109,5 +136,3 @@ class AboutPage extends StatelessWidget {
     );
   }
 }
-
-

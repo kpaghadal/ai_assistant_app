@@ -1,14 +1,15 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("com.google.gms.google-services") // apply here
+   
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.example.ai_assistant_app"
     compileSdk = 35
-    ndkVersion = "26.1.10909125"
+    ndkVersion = "29.0.14206865"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -20,11 +21,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.ai_assistant_app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 21
+        minSdk = 23
         targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -32,8 +30,6 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -41,4 +37,18 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // ADD FIREBASE BoM
+    implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
+
+    // ADD FIREBASE PRODUCTS YOU USE
+    implementation("com.google.firebase:firebase-analytics")
+
+    // Example (add only if needed)
+     implementation("com.google.firebase:firebase-auth")
+     implementation("com.google.firebase:firebase-firestore")
+    // implementation("com.google.firebase:firebase-storage")
+    // implementation("com.google.firebase:firebase-messaging")
 }

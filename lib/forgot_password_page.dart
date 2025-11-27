@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'ui_theme.dart';
 import 'otp_page.dart';
 
@@ -12,6 +13,7 @@ class ForgotPasswordPage extends StatefulWidget {
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _email = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -83,14 +85,23 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _sendOtp,
+                  onPressed: _isLoading ? null : _sendOtp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.brandGreen,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
                     elevation: 0,
                   ),
-                  child: const Text('Send OTP', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Send Reset Link', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -127,11 +138,63 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  void _sendOtp() {
-    if (_formKey.currentState?.validate() ?? false) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const OtpPage()),
+  void _sendOtp() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final email = _email.text.trim();
+      
+      // Send password reset email via Firebase
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+
+      if (!mounted) return;
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password reset email sent! Check your inbox.'),
+          backgroundColor: Colors.green,
+        ),
       );
+
+      // Navigate to OTP page with email
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => OtpPage(email: email),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      
+      String message = 'Failed to send reset email';
+      if (e.code == 'user-not-found') {
+        message = 'No account found with this email';
+      } else if (e.code == 'invalid-email') {
+        message = 'Invalid email address';
+      } else if (e.code == 'too-many-requests') {
+        message = 'Too many requests. Please try again later';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 }

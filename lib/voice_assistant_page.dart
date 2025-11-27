@@ -112,12 +112,14 @@ class VoiceAssistantPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: const [
           Icon(Icons.home_outlined, size: 30, color: Colors.black87),
-          Icon(Icons.history, size: 30, color: Colors.black87),
+         
           Icon(Icons.settings, size: 30, color: Colors.black87),
         ],
       ),
     );
   }
 }
+
+
 
 

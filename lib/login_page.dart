@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'signup_page.dart';
 import 'forgot_password_page.dart';
 import 'home_page.dart';
@@ -27,20 +28,17 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE0F0E4), // light minty green per mock
+      backgroundColor: const Color(0xFFE0F0E4),
       appBar: AppBar(
         backgroundColor: const Color(0xFFE0F0E4),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.black87),
-          onPressed: () {},
-        ),
         centerTitle: true,
         title: const Text(
           'Ai Assistant App',
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
         ),
       ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -48,22 +46,6 @@ class _LoginPageState extends State<LoginPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 8),
-              // Brand row (sparkle + text)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.auto_awesome, color: Colors.black87),
-                  SizedBox(width: 8),
-                  Text(
-                    'AI Assistant',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
               const SizedBox(height: 24),
               const Text(
                 'Welcome Back!',
@@ -86,7 +68,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 24),
 
-              // Card container with inputs and info banner
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -109,13 +90,15 @@ class _LoginPageState extends State<LoginPage> {
                             return 'Please enter your email';
                           }
                           final email = value.trim();
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$').hasMatch(email)) {
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$')
+                              .hasMatch(email)) {
                             return 'Please enter a valid email address';
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 16),
+
                       _buildInput(
                         label: 'Password',
                         controller: _passwordController,
@@ -142,7 +125,8 @@ class _LoginPageState extends State<LoginPage> {
                         child: TextButton(
                           onPressed: () {
                             Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
+                              MaterialPageRoute(
+                                  builder: (_) => const ForgotPasswordPage()),
                             );
                           },
                           style: TextButton.styleFrom(
@@ -152,7 +136,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
 
-                      // Security info banner
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
@@ -185,7 +168,6 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 32),
 
-              // Login button
               SizedBox(
                 width: double.infinity,
                 height: 58,
@@ -201,20 +183,21 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   child: const Text(
                     'Login',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // Sign up link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
                     "Don't have an account? ",
-                    style: TextStyle(color: Color(0xFF6B7280), fontSize: 16),
+                    style:
+                        TextStyle(color: Color(0xFF6B7280), fontSize: 16),
                   ),
                   GestureDetector(
                     onTap: () {
@@ -271,11 +254,14 @@ class _LoginPageState extends State<LoginPage> {
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: Icon(icon, color: const Color(0xFF6B7280), size: 22),
+            prefixIcon:
+                Icon(icon, color: const Color(0xFF6B7280), size: 22),
             suffixIcon: isPassword
                 ? IconButton(
                     icon: Icon(
-                      isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                       color: const Color(0xFF6B7280),
                     ),
                     onPressed: onToggleVisibility,
@@ -283,7 +269,8 @@ class _LoginPageState extends State<LoginPage> {
                 : null,
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -294,7 +281,8 @@ class _LoginPageState extends State<LoginPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF16A34A), width: 2),
+              borderSide:
+                  const BorderSide(color: Color(0xFF16A34A), width: 2),
             ),
           ),
         ),
@@ -302,10 +290,32 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _onLogin() {
-    if (_formKey.currentState?.validate() ?? false) {
-      Navigator.of(context).pushReplacement(
+  /// 🔥 REAL FIREBASE LOGIN
+  void _onLogin() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      Navigator.pushReplacement(
+        context,
         MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    } on FirebaseAuthException catch (e) {
+      String msg = "Login failed";
+
+      if (e.code == 'user-not-found') msg = "No user found for this email";
+      if (e.code == 'wrong-password') msg = "Wrong password";
+      if (e.code == 'invalid-email') msg = "Invalid email format";
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Colors.red),
       );
     }
   }

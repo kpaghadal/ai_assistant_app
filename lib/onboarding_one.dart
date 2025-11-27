@@ -14,7 +14,7 @@ class OnboardingOne extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Spacer(),
-              // Illustration placeholder (use your own asset later)
+              
               Container(
                 width: double.infinity,
                 height: 320,
@@ -55,5 +55,7 @@ class OnboardingOne extends StatelessWidget {
     );
   }
 }
+
+
 
 
